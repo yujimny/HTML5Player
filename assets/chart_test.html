@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja" manifest="TestChart.manifest">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+    <meta http-equiv="Content-Script-Type" content="text/javascript" />
+    <title>エネルギー総量グラフ</title>
+    <!-- インクルード -->
+    <!--[if lte IE 8]><script src="js/excanvas.js"></script><![endif]-->
+    <script src="js/Chart.js"></script>
+    <script src="js/excelrenkei.js"></script>
+</head>
+<body>
+<!-- 描画エリア -->
+        <input type="file" id="MyFile"  onchange="checkFiles()" >
+        
+        <h3>エネルギー総量グラフ</h3>
+        <canvas id="lineArea" height="450" width="800"></canvas>
+        <hr />
+        <h3>エネルギー利用内訳</h3>
+        <canvas id="pieArea" height="500" width="500"></canvas>
+        <hr />
+        
+        <p>
+        <input type="button" value="Excel連携" onclick="excelrenkei()">
+        </p>
+        <p>
+        <input type="button" value="Web Storageに保存" onclick="saveToWebStorage()">
+        <textarea id='txtData' rows='1' cols='10'></textarea>
+        </p>
+        <p>
+        <input type="button" value="Web Storageから読み込み" onclick="loadFromWebStorage()">
+        </p>
+        
+        <h3>デバッグ用ログ</h3>
+        <textarea id="text" cols="80" rows="20" wrap="off"></textarea>
+        <hr />
+        <script>
+            <!-- 円グラフ用データ -->
+            var pieData = [
+                {
+                    value: 70,
+                    color:"#CCCCCC"
+                },
+                {
+                    value : 15,
+                    color : "#FF0066"
+                },
+                {
+                    value : 15,
+                    color : "#666666"
+                }
+            ];
+            
+            var pieOption =
+            {
+                segmentStrokeColor : "#666",
+                segmentStrokeWidth : 5,
+                animation : false
+            };
+            
+            var canvas = document.getElementById("lineArea");
+            var ctxLine = canvas.getContext("2d");
+            var ctxPie = document.getElementById("pieArea").getContext("2d");
+            
+            canvas.addEventListener('mousedown', function(e){
+            	document.getElementById('text').value += "mousedown:e.clientX=" + e.clientX + ":e.clientY=" + e.clientY + "\n";
+        	}, false);
+            canvas.addEventListener('mouseup', function(e){
+            	document.getElementById('text').value += "mouseup:e.clientX=" + e.clientX + ":e.clientY=" + e.clientY + "\n";
+        	}, false);
+            canvas.ontouchstart = function(e){
+            	var t = event.touches[0];
+            	document.getElementById('text').value += "ontouchstart:t.pageX=" + t.pageX + ":t.pageY=" + t.pageY + "\n";
+        	};
+            canvas.ontouchend = function(e){
+            	var t = event.touches[0];
+            	document.getElementById('text').value += "ontouchend:t.pageX=" + t.pageX + ":t.pageY=" + e.clientY + "\n";
+        	};
+            
+            /* var timer;
+            var delay = 50;
+            var angle = 0;
+            //繰り返し描画を行う関数。
+            var loop = function(){
+                ctxLine.clearRect(0, 0, 800, 450);
+                ctxLine.fillRect(50, 50, 200, 200);
+                ctxLine.rotate(angle * Math.PI / 180);
+                angle++;
+                //タイマー(一度クリアしてから再設定。)
+                clearTimeout(timer);
+                timer = setTimeout(loop,delay);
+            }
+            loop(); */
+
+        <!-- 円グラフ描画 -->
+        var myPie = new Chart(ctxPie).Pie(pieData, pieOption);
+        
+        var lineChartData = {
+                labels : ["4月","5月","6月","7月","8月","9月","10月","11月","12月","1月","2月","3月"],
+                datasets : [
+                    {
+                        fillColor : "rgba(151,187,205,0.5)",
+                        strokeColor : "rgba(151,187,205,1)",
+                        pointColor : "rgba(151,187,205,1)",
+                        pointStrokeColor : "#fff",
+                        data : [0]
+                    },
+                    {
+                        fillColor : "rgba(100,100,205,0.5)",
+                        strokeColor : "rgba(151,187,205,1)",
+                        pointColor : "rgba(151,187,205,1)",
+                        pointStrokeColor : "#fff",
+                        data : [0]
+                    }
+                ]
+
+            };
+
+        function checkFiles() {
+            var fs = document.getElementById("MyFile").files;
+            var f = fs[0];
+            var fr = new FileReader();
+            fr.onload = function () {
+                document.getElementById('text').value = fr.result;  // 読み込み結果をtextareaに
+                var result = fr.result.split("\n");
+                for (var i = 0; i < result.length; i++) {
+                    var text = new String(result[i]);
+                    lineChartData.datasets[i].data = text.split(",");
+                    new Chart(ctxLine).Bar(lineChartData);
+                }
+            };
+            fr.readAsText(f);
+         }
+        
+        function saveToWebStorage() {
+        	localStorage.setItem('txtData', document.getElementById("txtData").value);
+        	alert('保存しました');
+        }
+        
+        function loadFromWebStorage() {
+        	document.getElementById("txtData").value = localStorage.getItem('txtData');
+        }
+
+        </script>
+</body>
+</html>
